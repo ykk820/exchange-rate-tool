@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匯率套利工具 - 旅遊刷卡精算師</title>
+    <meta name="description" content="出國旅遊換匯與信用卡回饋最佳化工具，即時匯率計算，幫您找出最省錢的支付方式。">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <main class="container">
+        <header class="app-header">
+            <div class="logo-wrapper">
+                <i class="fa-solid fa-coins logo-icon"></i>
+                <h1 class="logo-text">Pay<span class="highlight">Smart</span></h1>
+            </div>
+            <p class="subtitle">旅遊匯率與刷卡回饋精算師</p>
+            <div class="live-status">
+                <span class="status-dot"></span>
+                <span id="last-updated">即時匯率連線中...</span>
+            </div>
+        </header>
+
+        <!-- ===== Section 1: Main Dashboard ===== -->
+        <div class="dashboard">
+            <!-- Left Column: Inputs -->
+            <div class="input-section glass-panel">
+                <h2 class="section-title"><i class="fa-solid fa-plane-departure"></i> 1. 消費設定</h2>
+
+                <div class="form-group">
+                    <label for="currency-select">目標外幣</label>
+                    <div class="custom-select-wrapper">
+                        <select id="currency-select" class="modern-input">
+                            <option value="JPY" selected>🇯🇵 日圓 (JPY)</option>
+                            <option value="USD">🇺🇸 美元 (USD)</option>
+                            <option value="EUR">🇪🇺 歐元 (EUR)</option>
+                            <option value="KRW">🇰🇷 韓元 (KRW)</option>
+                            <option value="THB">🇹🇭 泰銖 (THB)</option>
+                            <option value="GBP">🇬🇧 英鎊 (GBP)</option>
+                            <option value="AUD">🇦🇺 澳幣 (AUD)</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down select-icon"></i>
+                    </div>
+                    <div class="exchange-rate-info">
+                        中價匯率: <span id="current-rate-display">--</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="spend-amount">預計消費金額 (外幣)</label>
+                    <div class="input-with-icon">
+                        <i class="fa-solid fa-money-bill-wave input-icon"></i>
+                        <input type="number" id="spend-amount" class="modern-input" placeholder="例如: 10000" min="0" value="10000">
+                        <span class="currency-suffix" id="currency-suffix">JPY</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-header-row">
+                    <h2 class="section-title"><i class="fa-regular fa-credit-card"></i> 2. 支付方式</h2>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button id="sync-cards-btn" class="btn-icon" title="同步最新卡片回饋"><i class="fa-solid fa-rotate-right"></i> 更新優惠</button>
+                        <button id="add-card-btn" class="btn-icon" title="新增信用卡"><i class="fa-solid fa-plus"></i> 新增卡片</button>
+                    </div>
+                </div>
+
+                <div id="cards-container" class="cards-list">
+                </div>
+            </div>
+
+            <!-- Right Column: Results -->
+            <div class="results-section">
+                <div class="glass-panel results-summary">
+                    <h2 class="section-title"><i class="fa-solid fa-trophy"></i> 最佳推薦</h2>
+                    <div class="winner-display">
+                        <div class="winner-badge">最省錢方案</div>
+                        <h3 id="best-method-name">計算中...</h3>
+                        <div class="winner-stats">
+                            <div class="stat-box">
+                                <span class="stat-label">實際支付 (台幣)</span>
+                                <span class="stat-value highlight" id="best-total-twd">--</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">獲得回饋 (台幣)</span>
+                                <span class="stat-value success" id="best-cashback-twd">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Savings Comparison Chart -->
+                <div class="glass-panel savings-panel">
+                    <h3 class="subsection-title"><i class="fa-solid fa-chart-bar"></i> 省了多少錢？</h3>
+                    <div class="savings-summary" id="savings-summary"></div>
+                    <div class="chart-container" style="height:220px;">
+                        <canvas id="savings-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-panel leaderboard-panel">
+                    <h3 class="subsection-title">所有方案比較</h3>
+                    <div class="table-container">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>排名</th>
+                                    <th>支付方式</th>
+                                    <th>淨成本 (TWD)</th>
+                                    <th>等效匯率</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Section 2: Rate Trend Chart ===== -->
+        <div class="full-width-section glass-panel" id="trend-section">
+            <div class="section-header-row">
+                <h2 class="section-title"><i class="fa-solid fa-chart-line"></i> 匯率走勢圖</h2>
+                <div class="trend-controls">
+                    <button class="trend-btn active" data-days="7">7天</button>
+                    <button class="trend-btn" data-days="30">30天</button>
+                    <button class="trend-btn" data-days="90">90天</button>
+                </div>
+            </div>
+            <div class="chart-container" style="height:320px;">
+                <canvas id="trend-chart"></canvas>
+            </div>
+            <div class="trend-stats" id="trend-stats"></div>
+        </div>
+
+        <!-- ===== Section 3: Exchange Timing Model ===== -->
+        <div class="full-width-section glass-panel" id="timing-section">
+            <h2 class="section-title"><i class="fa-solid fa-brain"></i> 換匯時機模型</h2>
+            <div class="timing-grid">
+                <div class="timing-recommendation" id="timing-recommendation">
+                    <div class="timing-signal" id="timing-signal">
+                        <div class="signal-icon" id="signal-icon">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="signal-text">
+                            <h3 id="signal-title">分析中...</h3>
+                            <p id="signal-desc">正在計算最佳換匯時機</p>
+                        </div>
+                    </div>
+                    <div class="signal-confidence">
+                        <span class="conf-label">信心指數</span>
+                        <div class="conf-bar-track">
+                            <div class="conf-bar-fill" id="conf-bar-fill" style="width:0%"></div>
+                        </div>
+                        <span class="conf-value" id="conf-value">--</span>
+                    </div>
+                </div>
+                <div class="timing-indicators">
+                    <div class="indicator-card">
+                        <div class="ind-header">
+                            <i class="fa-solid fa-arrow-trend-up"></i>
+                            <span>趨勢方向</span>
+                        </div>
+                        <div class="ind-value" id="ind-trend">--</div>
+                        <div class="ind-detail" id="ind-trend-detail"></div>
+                    </div>
+                    <div class="indicator-card">
+                        <div class="ind-header">
+                            <i class="fa-solid fa-arrows-left-right"></i>
+                            <span>均線位置</span>
+                        </div>
+                        <div class="ind-value" id="ind-ma">--</div>
+                        <div class="ind-detail" id="ind-ma-detail"></div>
+                    </div>
+                    <div class="indicator-card">
+                        <div class="ind-header">
+                            <i class="fa-solid fa-wave-square"></i>
+                            <span>波動率</span>
+                        </div>
+                        <div class="ind-value" id="ind-vol">--</div>
+                        <div class="ind-detail" id="ind-vol-detail"></div>
+                    </div>
+                    <div class="indicator-card">
+                        <div class="ind-header">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>動能指標</span>
+                        </div>
+                        <div class="ind-value" id="ind-momentum">--</div>
+                        <div class="ind-detail" id="ind-momentum-detail"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Section 4: Rate Alert ===== -->
+        <div class="full-width-section glass-panel" id="alert-section">
+            <h2 class="section-title"><i class="fa-solid fa-bell"></i> 匯率到價通知</h2>
+            <div class="alert-grid">
+                <div class="alert-form">
+                    <div class="form-group">
+                        <label>當 1 <span id="alert-currency-label">JPY</span> 低於 (TWD)</label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-bullseye input-icon"></i>
+                            <input type="number" id="alert-threshold" class="modern-input" placeholder="例如: 0.20" step="0.0001">
+                        </div>
+                    </div>
+                    <button id="set-alert-btn" class="btn-primary w-full"><i class="fa-solid fa-bell"></i> 設定提醒</button>
+                </div>
+                <div class="alert-list" id="alert-list">
+                    <p class="empty-hint">尚未設定任何提醒</p>
+                </div>
+                <div class="alert-banner hidden" id="alert-banner">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span id="alert-banner-text"></span>
+                    <button id="dismiss-alert-btn" class="btn-close-sm"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Section 5: Multi-Expense Calculator ===== -->
+        <div class="full-width-section glass-panel" id="multi-section">
+            <h2 class="section-title"><i class="fa-solid fa-calculator"></i> 多筆消費試算</h2>
+            <p class="section-hint">一次輸入不同幣別的消費，算出總成本</p>
+            <div id="multi-expenses" class="multi-expense-list">
+            </div>
+            <button id="add-expense-btn" class="btn-icon" style="margin-top:1rem;"><i class="fa-solid fa-plus"></i> 新增一筆消費</button>
+            <div class="divider"></div>
+            <div class="multi-results" id="multi-results">
+                <p class="empty-hint">新增消費項目後自動計算</p>
+            </div>
+        </div>
+
+        <!-- Add Card Modal -->
+        <div id="card-modal" class="modal-overlay hidden">
+            <div class="modal-content glass-panel">
+                <div class="modal-header">
+                    <h3>新增信用卡/簽帳卡</h3>
+                    <button id="close-modal-btn" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="new-card-name">卡片名稱</label>
+                        <input type="text" id="new-card-name" class="modern-input" placeholder="例如: 國泰CUBE卡">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="new-card-fee">海外手續費 (%)</label>
+                            <input type="number" id="new-card-fee" class="modern-input" value="1.5" step="0.1" min="0">
+                        </div>
+                        <div class="form-group half">
+                            <label for="new-card-reward">海外回饋 (%)</label>
+                            <input type="number" id="new-card-reward" class="modern-input" value="3.0" step="0.1" min="0">
+                        </div>
+                    </div>
+                    <button id="save-card-btn" class="btn-primary w-full">儲存卡片</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

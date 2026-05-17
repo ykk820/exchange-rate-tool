@@ -1,0 +1,7 @@
+[
+    { "id": "c1", "name": "台新 FlyGo卡", "type": "credit", "fee": 1.5, "reward": 3.0 },
+    { "id": "c2", "name": "國泰 CUBE卡 (趣旅行)", "type": "credit", "fee": 1.5, "reward": 3.0 },
+    { "id": "c3", "name": "富邦 J卡 (日韓專案)", "type": "credit", "fee": 1.5, "reward": 6.0 },
+    { "id": "c4", "name": "玉山 熊本熊卡 (日本)", "type": "credit", "fee": 1.5, "reward": 8.5 },
+    { "id": "cash", "name": "銀行現金換匯 (預估)", "type": "cash", "fee": 0, "reward": 0, "spread": 1.012 }
+]
